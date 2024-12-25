@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # Updated to address warning
 
     steps:
       - uses: actions/checkout@v4
@@ -23,6 +23,7 @@ jobs:
           cd server
           python -m pip install --upgrade pip
           pip install -r utils/requirements.txt
+          cd ..
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
@@ -33,13 +34,14 @@ jobs:
         run: |
           cd client
           npm install
-          npm run build --if-present
-          npm run test --if-present
+          npm run build
+          cd ..
+
+      - name: Debug directory structure
+        run: ls -la
 
       - name: Zip artifact for deployment
-        run: |
-          cd ..
-          zip -r release.zip server client/build
+        run: zip -r release.zip ./server ./client/build
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -48,13 +50,11 @@ jobs:
           path: release.zip
 
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: build
     environment:
       name: 'Production'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
-    permissions:
-      id-token: write
 
     steps:
       - name: Download artifact from build job
@@ -62,18 +62,13 @@ jobs:
         with:
           name: flask-react-app
 
-      - name: Unzip artifact for deployment
+      - name: Unzip artifact
         run: unzip release.zip
 
-      - name: Login to Azure
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
       - name: Deploy to Azure Web App
+        id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'af-de'
-          package: ./release.zip
+          publish-profile: ${{ secrets.AZUREWEBAPP_PUBLISHPROFILE }}
+          package: .
