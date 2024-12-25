@@ -30,39 +30,19 @@ jobs:
           node-version: '20.x'
 
       - name: Install and build client
-        working-directory: ./client
         run: |
-          npm ci
-          npm run build
-          if [ ! -d "dist" ]; then
-            echo "Dist directory not created!"
-            exit 1
-          fi
-
-      - name: Debug - List directories
-        run: |
-          echo "Root directory:"
-          ls -la
-          echo "Server directory:"
-          ls -la server/
-          echo "Client directory:"
-          ls -la client/
-          echo "Client dist directory:"
-          ls -la client/dist/ || echo "Dist directory not found!"
+          cd client
+          npm install
+          npm run build --if-present
+          cd ..
 
       - name: Zip artifact for deployment
-        run: |
-          if [ -d "client/dist" ] && [ -d "server" ]; then
-            zip -r release.zip server client/dist
-          else
-            echo "Required directories not found!"
-            exit 1
-          fi
+        run: zip release.zip ./* -r
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
-          name: flask-react-app
+          name: node-app
           path: release.zip
 
   deploy:
@@ -71,22 +51,29 @@ jobs:
     environment:
       name: 'Production'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+    permissions:
+      id-token: write
 
     steps:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
-          name: flask-react-app
+          name: node-app
 
+      - name: Unzip artifact for deployment
+        run: unzip release.zip
+      
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_DCD5A5801B43436B9403B23C516510C6 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_101860E4A1F34640A25FF4F040629C2F }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_F8D3D0FF9A064808AAC135745B93028F }}
 
-      - name: Deploy to Azure Web App
+      - name: 'Deploy to Azure Web App'
+        id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'af-de'
-          package: ./release.zip
+          slot-name: 'Production'
+          package: .
