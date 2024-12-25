@@ -34,8 +34,8 @@ jobs:
         run: |
           npm ci
           npm run build
-          if [ ! -d "build" ]; then
-            echo "Build directory not created!"
+          if [ ! -d "dist" ]; then
+            echo "Dist directory not created!"
             exit 1
           fi
 
@@ -47,13 +47,13 @@ jobs:
           ls -la server/
           echo "Client directory:"
           ls -la client/
-          echo "Client build directory:"
-          ls -la client/build/ || echo "Build directory not found!"
+          echo "Client dist directory:"
+          ls -la client/dist/ || echo "Dist directory not found!"
 
       - name: Zip artifact for deployment
         run: |
-          if [ -d "client/build" ] && [ -d "server" ]; then
-            zip -r release.zip server client/build
+          if [ -d "client/dist" ] && [ -d "server" ]; then
+            zip -r release.zip server client/dist
           else
             echo "Required directories not found!"
             exit 1
@@ -95,4 +95,3 @@ jobs:
         with:
           app-name: 'af-de'
           package: ./release.zip
-          
