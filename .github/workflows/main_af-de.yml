@@ -27,6 +27,7 @@ jobs:
       - name: Run server tests
         working-directory: ./server
         run: |
+          export PYTHONPATH=.
           pytest
 
       - name: Set up Node.js
