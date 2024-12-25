@@ -78,7 +78,7 @@ jobs:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
-          name: node-app
+          name: flask-react-app
 
       - name: Unzip artifact for deployment
         run: unzip release.zip
@@ -97,4 +97,3 @@ jobs:
           app-name: 'af-de'
           slot-name: 'Production'
           package: .
-          
