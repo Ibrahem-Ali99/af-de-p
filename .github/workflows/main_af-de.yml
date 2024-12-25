@@ -32,8 +32,12 @@ jobs:
       - name: Install and build client
         working-directory: ./client
         run: |
-          npm install
+          npm ci
           npm run build
+          if [ ! -d "build" ]; then
+            echo "Build directory not created!"
+            exit 1
+          fi
 
       - name: Debug - List directories
         run: |
@@ -41,12 +45,19 @@ jobs:
           ls -la
           echo "Server directory:"
           ls -la server/
+          echo "Client directory:"
+          ls -la client/
           echo "Client build directory:"
-          ls -la client/build/
+          ls -la client/build/ || echo "Build directory not found!"
 
       - name: Zip artifact for deployment
         run: |
-          zip -r release.zip server client/build
+          if [ -d "client/build" ] && [ -d "server" ]; then
+            zip -r release.zip server client/build
+          else
+            echo "Required directories not found!"
+            exit 1
+          fi
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
